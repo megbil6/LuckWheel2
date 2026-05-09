@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>عجلة الحظ - اختيار الطلاب</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-dark: #1a237e;
+    --blue-mid: #1565c0;
+    --blue-light: #42a5f5;
+    --blue-pale: #90caf9;
+    --purple: #7b1fa2;
+    --purple-light: #ab47bc;
+    --pink: #e91e63;
+    --pink-light: #f48fb1;
+    --gold: #ffd700;
+    --gold-dark: #c8a400;
+    --white: #ffffff;
+    --bg: #f0f4ff;
+    --shadow: rgba(26,35,126,0.25);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px 32px;
+    background-image: radial-gradient(ellipse at 60% 10%, #c5cff5 0%, transparent 60%),
+                      radial-gradient(ellipse at 10% 90%, #f0b8d4 0%, transparent 50%);
+  }
+
+  h1 {
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    font-weight: 900;
+    color: var(--blue-dark);
+    text-align: center;
+    margin-bottom: 18px;
+    letter-spacing: -0.5px;
+  }
+
+  /* ─── Setup Panel ─── */
+  #setup-panel {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 8px 32px var(--shadow);
+    margin-bottom: 24px;
+  }
+
+  #setup-panel h2 {
+    font-size: 1.1rem;
+    color: var(--blue-mid);
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+
+  .field-group { margin-bottom: 14px; }
+  .field-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 6px;
+  }
+  .field-group input, .field-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #dde3f5;
+    border-radius: 12px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    color: #333;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: ltr;
+    text-align: left;
+  }
+  .field-group input:focus, .field-group select:focus { border-color: var(--blue-mid); }
+
+  #load-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--blue-mid), var(--blue-dark));
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 16px rgba(21,101,192,0.4);
+  }
+  #load-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(21,101,192,0.5); }
+  #load-btn:active { transform: translateY(0); }
+
+  #status-msg {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    text-align: center;
+    color: #888;
+    min-height: 20px;
+  }
+  #status-msg.error { color: #c62828; }
+  #status-msg.success { color: #2e7d32; font-weight: 600; }
+
+  /* ─── Wheel Section ─── */
+  #wheel-section {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  #class-info {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--blue-dark);
+    margin-bottom: 8px;
+  }
+
+  #remaining-count {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  /* ─── Wheel Container ─── */
+  .wheel-wrap {
+    position: relative;
+    width: min(80vw, 420px);
+    height: min(80vw, 420px);
+    margin-bottom: 28px;
+  }
+
+  /* Gold outer ring */
+  .wheel-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(#ffd700, #ffe57a, #c8a400, #ffd700);
+    box-shadow: 0 0 0 6px #1a237e, 0 12px 48px rgba(26,35,126,0.4), 0 0 60px rgba(233,30,99,0.15);
+  }
+
+  /* Blue border inside gold */
+  .wheel-border {
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: var(--blue-dark);
+  }
+
+  /* Canvas for segments */
+  #wheelCanvas {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    width: calc(100% - 28px);
+    height: calc(100% - 28px);
+  }
+
+  /* Center hub */
+  .wheel-hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px; height: 28px;
+    background: radial-gradient(circle at 35% 35%, #90caf9, #1565c0);
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+
+  /* Pointer */
+  .pointer {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    width: 0;
+    height: 0;
+  }
+  .pointer-body {
+    width: 36px;
+    height: 52px;
+    background: linear-gradient(180deg, #ffd700 0%, #c8a400 100%);
+    clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+    position: relative;
+    left: -18px;
+  }
+  .pointer-shine {
+    position: absolute;
+    top: 4px; left: -11px;
+    width: 12px; height: 28px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, transparent 100%);
+    clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+    transform: translateX(4px);
+  }
+
+  /* ─── Spin Button ─── */
+  #spin-btn {
+    padding: 16px 48px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(135deg, #1565c0 0%, #1a237e 100%);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(26,35,126,0.45);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 1px;
+    margin-bottom: 28px;
+  }
+  #spin-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(26,35,126,0.55); }
+  #spin-btn:active:not(:disabled) { transform: translateY(0); }
+  #spin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ─── Winner Display ─── */
+  #winner-box {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    padding: 24px 32px;
+    box-shadow: 0 8px 32px var(--shadow);
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 16px;
+    animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+    border: 3px solid var(--gold);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  #winner-box .trophy { font-size: 2.5rem; margin-bottom: 8px; }
+  #winner-box .label  { font-size: 0.9rem; color: #888; font-weight: 600; margin-bottom: 4px; }
+  #winner-name {
+    font-size: clamp(1.6rem, 6vw, 2.4rem);
+    font-weight: 900;
+    color: var(--blue-dark);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* ─── Reset Button ─── */
+  #reset-btn {
+    padding: 10px 28px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--blue-mid);
+    background: transparent;
+    border: 2px solid var(--blue-mid);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #reset-btn:hover { background: var(--blue-mid); color: white; }
+
+  /* ─── Manual Input Fallback ─── */
+  #manual-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed #ddd;
+  }
+  #manual-section summary {
+    font-size: 0.85rem;
+    color: #888;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    text-align: center;
+  }
+  #manual-section summary::-webkit-details-marker { display: none; }
+  #manual-textarea {
+    width: 100%;
+    height: 100px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 2px solid #dde3f5;
+    border-radius: 12px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    resize: vertical;
+    direction: rtl;
+  }
+  #manual-load-btn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--purple-light), var(--purple));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 480px) {
+    body { padding: 12px 8px 24px; }
+    #setup-panel { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎡 عجلة الحظ</h1>
+
+<!-- Setup Panel -->
+<div id="setup-panel">
+  <h2>⚙️ إعداد البيانات</h2>
+
+  <div class="field-group">
+    <label>🔗 رابط Google Sheet (منشور كـ CSV)</label>
+    <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=..." />
+  </div>
+
+  <div class="field-group">
+    <label>📋 رقم الصفحة (Sheet) – مثال: 0 للأولى، 1 للثانية...</label>
+    <input type="number" id="sheet-index" value="0" min="0" />
+  </div>
+
+  <button id="load-btn">📥 تحميل أسماء الطلاب</button>
+  <div id="status-msg">أدخل رابط الشيت ثم اضغط تحميل</div>
+
+  <!-- Manual fallback -->
+  <details id="manual-section">
+    <summary>✏️ أو أدخل الأسماء يدوياً (اضغط هنا)</summary>
+    <textarea id="manual-textarea" placeholder="أدخل اسم واحد في كل سطر&#10;أحمد محمد&#10;سارة علي&#10;خالد إبراهيم"></textarea>
+    <button id="manual-load-btn">▶ تحميل الأسماء</button>
+  </details>
+</div>
+
+<!-- Wheel Section -->
+<div id="wheel-section">
+  <div id="class-info"></div>
+  <div id="remaining-count"></div>
+
+  <div class="wheel-wrap" id="wheelWrap">
+    <div class="wheel-ring"></div>
+    <div class="wheel-border"></div>
+    <canvas id="wheelCanvas"></canvas>
+    <div class="wheel-hub"></div>
+    <div class="pointer">
+      <div class="pointer-body">
+        <div class="pointer-shine"></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="spin-btn">🎯 تدوير العجلة</button>
+
+  <div id="winner-box">
+    <div class="trophy">🏆</div>
+    <div class="label">الطالب المختار</div>
+    <div id="winner-name"></div>
+  </div>
+
+  <button id="reset-btn">🔄 إعادة جميع الأسماء</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+let allStudents = [];
+let remaining   = [];
+let spinning    = false;
+let currentAngle = 0;
+
+// Segment colors matching the image palette
+const PALETTES = [
+  ['#1565c0','#ffffff'], // blue dark / white text
+  ['#42a5f5','#ffffff'], // blue light / white
+  ['#90caf9','#1a237e'], // pale blue / dark text
+  ['#7b1fa2','#ffffff'], // purple / white
+  ['#ab47bc','#ffffff'], // purple light / white
+  ['#e91e63','#ffffff'], // pink / white
+  ['#f48fb1','#1a237e'], // pink light / dark
+  ['#ffffff','#1565c0'], // white / blue text
+];
+
+// ═══════════════════════════════════════════
+// LOAD FROM GOOGLE SHEETS
+// ═══════════════════════════════════════════
+document.getElementById('load-btn').addEventListener('click', async () => {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) { showStatus('⚠️ أدخل رابط الشيت أولاً', 'error'); return; }
+
+  showStatus('⏳ جاري التحميل...', '');
+  try {
+    // Use a CORS proxy approach: ask user to publish sheet as CSV
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('فشل الاتصال');
+    const text = await resp.text();
+    const names = parseCSVNames(text);
+    if (!names.length) throw new Error('لا توجد أسماء في الملف');
+    loadNames(names);
+    showStatus(`✅ تم تحميل ${names.length} طالب بنجاح`, 'success');
+  } catch(e) {
+    showStatus('❌ ' + (e.message || 'تأكد أن الشيت منشور للعموم كـ CSV') , 'error');
+  }
+});
+
+function parseCSVNames(csv) {
+  const lines = csv.split('\n');
+  const names = [];
+  for (const line of lines) {
+    // Take first column, strip quotes
+    const cell = line.split(',')[0].replace(/^"|"$/g,'').trim();
+    if (cell && cell.length > 0) names.push(cell);
+  }
+  return names;
+}
+
+// ═══════════════════════════════════════════
+// MANUAL LOAD
+// ═══════════════════════════════════════════
+document.getElementById('manual-load-btn').addEventListener('click', () => {
+  const raw = document.getElementById('manual-textarea').value;
+  const names = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!names.length) { showStatus('⚠️ أدخل أسماء أولاً', 'error'); return; }
+  loadNames(names);
+  showStatus(`✅ تم تحميل ${names.length} اسم`, 'success');
+});
+
+// ═══════════════════════════════════════════
+// INITIALIZE WHEEL
+// ═══════════════════════════════════════════
+function loadNames(names) {
+  allStudents = [...names];
+  remaining   = [...names];
+  currentAngle = 0;
+  document.getElementById('setup-panel').style.display = 'none';
+  document.getElementById('wheel-section').style.display = 'flex';
+  document.getElementById('winner-box').style.display = 'none';
+  document.getElementById('class-info').textContent = `👥 إجمالي الطلاب: ${allStudents.length}`;
+  updateRemaining();
+  drawWheel();
+}
+
+function updateRemaining() {
+  document.getElementById('remaining-count').textContent =
+    `متبقي: ${remaining.length} طالب`;
+}
+
+// ═══════════════════════════════════════════
+// DRAW WHEEL
+// ═══════════════════════════════════════════
+function drawWheel(angle = 0) {
+  const canvas = document.getElementById('wheelCanvas');
+  const wrap   = document.getElementById('wheelWrap');
+  const size   = wrap.offsetWidth - 28;
+  canvas.width  = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx  = size / 2;
+  const cy  = size / 2;
+  const r   = size / 2;
+
+  ctx.clearRect(0, 0, size, size);
+
+  if (!remaining.length) {
+    ctx.fillStyle = '#1565c0';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = `bold ${size*0.08}px Cairo`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('انتهى الجميع! 🎉', cx, cy);
+    return;
+  }
+
+  const n     = remaining.length;
+  const slice = (2 * Math.PI) / n;
+
+  for (let i = 0; i < n; i++) {
+    const startAngle = angle + i * slice;
+    const endAngle   = startAngle + slice;
+    const palette    = PALETTES[i % PALETTES.length];
+
+    // Segment
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, endAngle);
+    ctx.closePath();
+
+    // Gradient fill
+    const midAngle = startAngle + slice / 2;
+    const gx1 = cx + (r * 0.3) * Math.cos(midAngle);
+    const gy1 = cy + (r * 0.3) * Math.sin(midAngle);
+    const gx2 = cx + r * Math.cos(midAngle);
+    const gy2 = cy + r * Math.sin(midAngle);
+    const grad = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+
+    // Alternate solid & white segments like the image
+    if (i % 2 === 0) {
+      grad.addColorStop(0, palette[0]);
+      grad.addColorStop(1, lighten(palette[0], 0.3));
+      ctx.fillStyle = grad;
+    } else {
+      ctx.fillStyle = '#ffffff';
+    }
+    ctx.fill();
+
+    // Divider line
+    ctx.strokeStyle = '#1a237e';
+    ctx.lineWidth   = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Text
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(midAngle);
+    ctx.textAlign    = 'right';
+    ctx.textBaseline = 'middle';
+
+    const name     = remaining[i];
+    const maxLen   = 12;
+    const dispName = name.length > maxLen ? name.substring(0, maxLen) + '…' : name;
+    const fontSize = Math.max(9, Math.min(16, (r * 0.75) / (maxLen / 1.8)));
+
+    ctx.font      = `bold ${fontSize}px Cairo`;
+    ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#1a237e';
+
+    // Shadow
+    ctx.shadowColor   = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur    = 3;
+    ctx.fillText(dispName, r * 0.88, 0);
+    ctx.restore();
+  }
+
+  // Inner white circle glow
+  const innerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.12);
+  innerGrad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  innerGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.12, 0, Math.PI*2);
+  ctx.fillStyle = innerGrad;
+  ctx.fill();
+}
+
+function lighten(hex, amt) {
+  const num = parseInt(hex.replace('#',''), 16);
+  const r = Math.min(255, (num >> 16) + amt * 255);
+  const g = Math.min(255, ((num >> 8) & 0xff) + amt * 255);
+  const b = Math.min(255, (num & 0xff) + amt * 255);
+  return `rgb(${~~r},${~~g},${~~b})`;
+}
+
+// ═══════════════════════════════════════════
+// SPIN
+// ═══════════════════════════════════════════
+document.getElementById('spin-btn').addEventListener('click', spin);
+
+function spin() {
+  if (spinning || !remaining.length) return;
+  spinning = true;
+  document.getElementById('spin-btn').disabled = true;
+  document.getElementById('winner-box').style.display = 'none';
+
+  const n = remaining.length;
+  const winnerIndex = Math.floor(Math.random() * n);
+
+  // How much to spin: many full rotations + land on winner
+  const slice        = (2 * Math.PI) / n;
+  // Pointer is at top (−π/2). We want the winner segment's mid at top.
+  // Current layout: segment i starts at currentAngle + i*slice
+  // We need: currentAngle_new + winnerIndex*slice + slice/2 = -π/2 (mod 2π)
+  const targetMid    = -Math.PI / 2 - (winnerIndex * slice + slice / 2);
+  const extraSpins   = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+  const totalAngle   = extraSpins + ((targetMid - currentAngle) % (2 * Math.PI));
+
+  const duration = 4000 + Math.random() * 1500;
+  const startTime = performance.now();
+  const startAngle = currentAngle;
+
+  function easeOut(t) {
+    return 1 - Math.pow(1 - t, 4);
+  }
+
+  function frame(now) {
+    const elapsed = now - startTime;
+    const t       = Math.min(elapsed / duration, 1);
+    const angle   = startAngle + totalAngle * easeOut(t);
+    currentAngle  = angle % (2 * Math.PI);
+    drawWheel(currentAngle);
+
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      spinning = false;
+      document.getElementById('spin-btn').disabled = false;
+
+      // Announce winner
+      const winner = remaining[winnerIndex];
+      remaining.splice(winnerIndex, 1);
+      updateRemaining();
+      drawWheel(currentAngle);
+
+      const box  = document.getElementById('winner-box');
+      const name = document.getElementById('winner-name');
+      name.textContent = winner;
+      box.style.display = 'flex';
+      box.style.animation = 'none';
+      void box.offsetWidth;
+      box.style.animation = 'popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275)';
+
+      if (!remaining.length) {
+        document.getElementById('spin-btn').disabled = true;
+        document.getElementById('spin-btn').textContent = '🎉 اكتمل الجميع!';
+      }
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+// ═══════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════
+document.getElementById('reset-btn').addEventListener('click', () => {
+  remaining = [...allStudents];
+  currentAngle = 0;
+  updateRemaining();
+  drawWheel(currentAngle);
+  document.getElementById('winner-box').style.display = 'none';
+  document.getElementById('spin-btn').disabled = false;
+  document.getElementById('spin-btn').textContent = '🎯 تدوير العجلة';
+});
+
+// ═══════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════
+window.addEventListener('resize', () => {
+  if (remaining.length || allStudents.length) drawWheel(currentAngle);
+});
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function showStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  el.textContent  = msg;
+  el.className    = type;
+}
+</script>
+</body>
+</html>
