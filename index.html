@@ -419,9 +419,9 @@ document.getElementById('spin-btn').addEventListener('click', () => {
     spinning=false;
     document.getElementById('spin-btn').disabled=false;
     const winner=remaining[wi];
-    remaining.splice(wi,1); updateInfo(); drawWheel(currentAngle);
 
     setTimeout(() => {
+      remaining.splice(wi,1); updateInfo(); drawWheel(currentAngle);
       document.getElementById('winner-name').textContent=winner;
       const box=document.getElementById('winner-box');
       box.style.display='flex'; box.style.animation='none';
@@ -431,7 +431,7 @@ document.getElementById('spin-btn').addEventListener('click', () => {
         document.getElementById('spin-btn').disabled=true;
         document.getElementById('spin-btn').textContent='🎉 اكتمل الجميع!';
       }
-    }, 1500);
+    }, 500);
   }
   requestAnimationFrame(frame);
 });
