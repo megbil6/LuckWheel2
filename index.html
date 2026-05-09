@@ -105,8 +105,8 @@
   /* Wheel */
   .wheel-wrap {
     position: relative;
-    width:  min(min(68vw, 62vh), 550px);
-    height: min(min(68vw, 62vh), 550px);
+    width:  min(min(68vw, 62vh), 500px);
+    height: min(min(68vw, 62vh), 500px);
     flex-shrink: 0;
   }
   .wheel-ring {
@@ -374,13 +374,13 @@ function drawWheel(angle) {
     ctx.save();
     ctx.translate(cx,cy); ctx.rotate(mid);
     ctx.textAlign='right'; ctx.textBaseline='middle';
-    const maxCh = n>20 ? 7 : n>12 ? 9 : 11;
+    const maxCh = n>20 ? 11 : n>12 ? 9 : 11;
     const disp  = remaining[i].length>maxCh ? remaining[i].substring(0,maxCh)+'…' : remaining[i];
-    const fs    = Math.max(6.5, Math.min(12, r*0.5/Math.sqrt(n)*1.8));
+    const fs    = Math.max(8, Math.min(12, r*0.5/Math.sqrt(n)*2));
     ctx.font      = `bold ${fs}px Cairo`;
     ctx.fillStyle = isW ? '#1a237e' : '#ffffff';
     ctx.shadowColor='rgba(0,0,0,0.22)'; ctx.shadowBlur=2;
-    ctx.fillText(disp, r*0.86, 0);
+    ctx.fillText(disp, r*0.95, 0);
     ctx.restore();
   }
 
